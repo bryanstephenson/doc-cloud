@@ -14,11 +14,49 @@
    to a virtual machine. The Shared File Systems service provides a storage
    provisioning control plane for shared or distributed file systems. The
    service enables management of share types and share snapshots if you have a
-   driver supports them.
+   driver that supports them.
   </para>
   <para>
-   The &o_sharefs; service consists of the following components: manila-api,
-   manila-data, manila-scheduler, manila-share, and messaging queue.
+   The &o_sharefs; service consists of the following components:
+  </para>
+  <itemizedlist>
+   <listitem>
+    <para>
+     manila-api
+    </para>
+   </listitem>
+   <listitem>
+    <para>
+     manila-data
+    </para>
+   </listitem>
+   <listitem>
+    <para>
+     manila-scheduler
+    </para>
+   </listitem>
+   <listitem>
+    <para>
+     manila-share
+    </para>
+   </listitem>
+   <listitem>
+    <para>
+     messaging queue
+    </para>
+   </listitem>
+  </itemizedlist>
+  <para>
+   These &o_sharefs; components are included in example &productname; models
+   based on &o_comp; KVM, such as <literal>entry-scale-kvm</literal>,
+   <literal>entry-scale-kvm-mml</literal>, and
+   <literal>mid-scale-kvm</literal>. General installation instructions are
+   available at <xref linkend="install_kvm"/>.
+  </para>
+  <para>
+   If you modify one of these cloud models to set up a dedicated &clm;, add
+   <literal>manila-client</literal> item to the list of service components for
+   the &clm; cluster.
   </para>
   <para>
    The following steps install &o_sharefs; if it is not already present
@@ -92,12 +130,98 @@ the changes to take effect:
     The <literal>manila-share</literal> service component is not started by the
     <filename>manila-deploy.yml</filename> playbook when run under default
     conditions. This component requires that a valid backend be configured,
-    which is described in the next section.
+    which is described in <xref linkend="configure-manila-backend"/>.
    </para>
   </note>
  </section>
  <section>
-  <title>Configure &o_sharefs; backend</title>
+  <title>Adding Manila to an Existing &productname; Environment</title>
+  <para>
+   Add &o_sharefs; to an existing &product; installation or as part of an
+   upgrade with the following steps:
+  </para>
+  <procedure>
+   <step>
+    <para>
+     Add the items listed below to the list of service components in
+     <filename>~/openstack/my_cloud/definition/data/control_plane.yml</filename>. Add
+     them to clusters that have <literal>server-role</literal> set to
+     <literal>CONTROLLER-ROLE</literal> (applies to entry-scale models).
+    </para>
+    <itemizedlist>
+     <listitem>
+      <para>
+       manila-client
+      </para>
+     </listitem>
+     <listitem>
+      <para>
+       manila-api
+      </para>
+     </listitem>
+    </itemizedlist>
+   </step>
+   <step>
+    <para>
+     If your environment uses a dedicated &clm;, add
+     <literal>magnum-client</literal> to the list of service components for the
+     &clm; in
+     <filename>~/openstack/my_cloud/definition/data/control_plane.yml</filename>.
+    </para>
+   </step>
+   <step>
+    <para>
+     Commit your configuration to the local git repo.
+    </para>
+    <screen>&prompt.ardana;cd ~/openstack/ardana/ansible
+&prompt.ardana;git add -A
+&prompt.ardana;git commit -m "My config or other commit message"</screen>
+   </step>
+   <step>
+    <para>
+     Run the configuration processor.
+    </para>
+    <screen>&prompt.ardana;cd ~/openstack/ardana/ansible
+&prompt.ardana;ansible-playbook -i hosts/localhost config-processor-run.yml</screen>
+   </step>
+   <step>
+    <para>
+     Update deployment directory.
+    </para>
+    <screen>&prompt.ardana;cd ~/openstack/ardana/ansible
+&prompt.ardana;ansible-playbook -i hosts/localhost ready-deployment.yml</screen>
+   </step>
+   <step>
+    <para>
+     Deploy &o_sharefs;.
+    </para>
+    <screen>&prompt.ardana;cd ~/scratch/ansible/next/ardana/ansible
+&prompt.ardana;ansible-playbook -i hosts/verb_hosts percona-deploy.yml
+&prompt.ardana;ansible-playbook -i hosts/verb_hosts manila-deploy.yml
+&prompt.ardana;ansible-playbook -i hosts/verb_hosts ardana-gen-hosts-file.yml
+&prompt.ardana;ansible-playbook -i hosts/verb_hosts ardana-reconfigure.yml
+&prompt.ardana;ansible-playbook -i hosts/verb_hosts clients-deploy.yml</screen>
+   </step>
+   <step>
+    <para>
+     Verify the &o_sharefs; installation.
+    </para>
+    <screen>&prompt.ardana;cd
+&prompt.ardana;. manila.osrc
+&prompt.ardana;. service.osrc
+&prompt.ardana;manila api-version
+&prompt.ardana;manila service-list</screen>
+   </step>
+  </procedure>
+  <para>
+   The &o_sharefs; CLI can be run from the &clm; or controller nodes.
+  </para>
+  <para>
+   Proceed to <xref linkend="configure-manila-backend"/>.
+  </para>
+  </section>
+ <section xml:id="configure-manila-backend">
+  <title>Configure &o_sharefs; Backend</title>
   <procedure>
    <step>
     <para>
